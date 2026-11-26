@@ -124,6 +124,11 @@ public class ForLoopTask : TaskActivity<ForLoopTask>, IActivityProvidedValues, I
         var to = await EvaluateToAsync(workflowContext);
         var step = await EvaluateStepAsync(workflowContext);
 
+        if (step == 0d)
+        {
+            return Outcome("Done");
+        }
+
         if (Index < from)
         {
             Index = from;

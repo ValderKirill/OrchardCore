@@ -28,6 +28,7 @@ using OrchardCore.Workflows.Helpers;
 using OrchardCore.Workflows.Models;
 using OrchardCore.Workflows.Services;
 using OrchardCore.Workflows.WorkflowContextProviders;
+using StackExchange.Profiling.Internal;
 
 namespace OrchardCore.Tests.Workflows;
 
@@ -266,6 +267,36 @@ public class WorkflowManagerTests
         Assert.Contains("Iterate", result.Outcomes);
         Assert.Equal(1d, workflowContext.LastResult);
         Assert.Equal(1d, workflowContext.Properties["x"]);
+    }
+
+    [Fact]
+    public async Task ForLoopTask_ZeroStep_DoesNotAdvanceIndex()
+    {
+        var serviceProvider = CreateServiceProvider();
+        using var workflowContext = new WorkflowExecutionContext(
+            new WorkflowType(),
+            new Workflow { WorkflowId = IdGenerator.GenerateId() },
+            null,
+            null,
+            null,
+            null,
+            null,
+            []);
+
+        var activity = new ForLoopTask(TestExpressions.CreateManager(),
+            new NullStringLocalizerFactory(), new Mock<IStringLocalizer<ForLoopTask>>().Object)
+        {
+            From = new WorkflowExpression<double>("0", WorkflowExpressionSyntaxes.Literal),
+            To = new WorkflowExpression<double>("10", WorkflowExpressionSyntaxes.Literal),
+            Step = new WorkflowExpression<double>("0", WorkflowExpressionSyntaxes.Literal),
+        };
+
+        var result = await activity.ExecuteAsync(workflowContext, new ActivityContext());
+        var result2 = await activity.ExecuteAsync(workflowContext, new ActivityContext());
+
+        Assert.DoesNotContain("Iterate", result.Outcomes);
+        Assert.Null(workflowContext.LastResult);
+        Assert.DoesNotContain("x", workflowContext.Properties.Keys);
     }
 
     [Fact]
